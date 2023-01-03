@@ -26,5 +26,6 @@ venv
 pyffish.egg-info
 
 # IDEs
-.vscode
+.vscode/*
+!.vscode/tasks.json
 .idea
