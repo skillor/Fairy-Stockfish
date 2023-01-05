@@ -6,7 +6,7 @@
         {
             "label": "Build Windows",
             "type": "shell",
-            "command": "wsl sh -c \"make -j build COMP=mingw largeboards=yes nnue=no ARCH=x86-64 EXE=fairy-stockfish_x86-64.exe && strip fairy-stockfish_x86-64.exe && make clean\"",
+            "command": "wsl sh -c \"make -j build COMP=mingw largeboards=yes nnue=no ARCH=x86-64 EXE=fairy-stockfish-largeboard_x86-64.exe && strip fairy-stockfish-largeboard_x86-64.exe && make clean\"",
             "options": {
                 "cwd": "${workspaceFolder}/src"
             },
