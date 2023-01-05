@@ -37,6 +37,14 @@ inline int str_count(std::string s, char match) {
   return count;
 }
 
+inline bool str_equals(std::string s, const char *c) {
+  return s.compare(c) == 0;
+}
+
+inline bool str_startswith(std::string s, const char *c) {
+  return s.rfind(c, 0) == 0;
+}
+
 std::string engine_info(bool to_uci = false, bool to_xboard = false);
 std::string compiler_info();
 void prefetch(void* addr);

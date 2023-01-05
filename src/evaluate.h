@@ -33,6 +33,7 @@ class Position;
 namespace Eval {
 
   std::string trace(Position& pos);
+  std::string debug_variant(Position& pos);
   Value evaluate(const Position& pos);
 
   extern bool useNNUE;

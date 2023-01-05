@@ -575,6 +575,11 @@ inline Value mg_value(Score s) {
   return Value(mg.s);
 }
 
+inline Score score_phase(Phase p, int score1, Score score2) {
+  if (p == MG) return make_score(score1, eg_value(score2));
+  return make_score(mg_value(score2), score1);
+}
+
 #define ENABLE_BIT_OPERATORS_ON(T)                                        \
 constexpr T operator~ (T d) { return (T)~(int)d; }                        \
 constexpr T operator| (T d1, T d2) { return (T)((int)d1 | (int)d2); }     \
@@ -631,9 +636,11 @@ constexpr Square operator-(Square s, Direction d) { return Square(int(s) - int(d
 inline Square& operator+=(Square& s, Direction d) { return s = s + d; }
 inline Square& operator-=(Square& s, Direction d) { return s = s - d; }
 
-/// Only declared but not defined. We don't want to multiply two scores due to
-/// a very high risk of overflow. So user should explicitly convert to integer.
-Score operator*(Score, Score) = delete;
+/// Multiplication of two Scores.
+inline Score operator*(Score s1, Score s2) {
+  Score result = make_score(int(mg_value(s1)) * int(mg_value(s2)), int(eg_value(s1)) * int(eg_value(s2)));
+  return result;
+}
 
 /// Division of a Score must be handled separately for each term
 inline Score operator/(Score s, int i) {

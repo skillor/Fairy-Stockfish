@@ -92,6 +92,18 @@ namespace {
     sync_cout << "\n" << Eval::trace(p) << sync_endl;
   }
 
+  // trace_variant() prints information about the variant
+  // options set so far.
+
+  void trace_variant(Position& pos) {
+
+    StateListPtr states(new std::deque<StateInfo>(1));
+    Position p;
+    p.set(pos.variant(), pos.fen(), Options["UCI_Chess960"], &states->back(), Threads.main());
+
+    sync_cout << "\n" << Eval::debug_variant(p) << sync_endl;
+  }
+
 
   // setoption() is called when engine receives the "setoption" UCI command. The
   // function updates the UCI option ("name") to the given value ("value").
@@ -386,6 +398,7 @@ void UCI::loop(int argc, char* argv[]) {
       else if (token == "bench")    bench(pos, is, states);
       else if (token == "d")        sync_cout << pos << sync_endl;
       else if (token == "eval")     trace_eval(pos);
+      else if (token == "variant")  trace_variant(pos);
       else if (token == "compiler") sync_cout << compiler_info() << sync_endl;
       else if (token == "export_net")
       {

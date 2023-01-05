@@ -35,6 +35,107 @@ namespace Stockfish {
 /// Variant struct stores information needed to determine the rules of a variant.
 
 struct Variant {
+  #define S(mg, eg) make_score(mg, eg)
+  // Threshold for lazy and space evaluation
+  Value LazyThreshold1    =  Value(1565);
+  Value LazyThreshold2    =  Value(1102);
+  Value SpaceThreshold    =  Value(11551);
+
+  // KingAttackWeights[PieceType] contains king attack weights by piece type
+  // NO_PIECE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN
+  int KingAttackWeights[PIECE_TYPE_NB] = { 0, 0, 81, 52, 44, 10, 40 };
+
+  // SafeCheck[PieceType][single/multiple] contains safe check bonus by piece type,
+  // higher if multiple safe checks are possible for that piece type.
+  int SafeCheck[PIECE_TYPE_NB][2] = {
+      {}, {600, 600}, {803, 1292}, {639, 974}, {1087, 1878}, {759, 1132}, {600, 900}
+  };
+
+  // MobilityBonus[PieceType-2][attacked] contains bonuses for middle and end game,
+  // indexed by piece type and number of attacked squares in the mobility area.
+  Score MobilityBonus[PIECE_TYPE_NB - 2][4 * RANK_NB] = {
+    { S(-62,-79), S(-53,-57), S(-12,-31), S( -3,-17), S(  3,  7), S( 12, 13), // Knight
+      S( 21, 16), S( 28, 21), S( 37, 26) },
+    { S(-47,-59), S(-20,-25), S( 14, -8), S( 29, 12), S( 39, 21), S( 53, 40), // Bishop
+      S( 53, 56), S( 60, 58), S( 62, 65), S( 69, 72), S( 78, 78), S( 83, 87),
+      S( 91, 88), S( 96, 98) },
+    { S(-60,-82), S(-24,-15), S(  0, 17) ,S(  3, 43), S(  4, 72), S( 14,100), // Rook
+      S( 20,102), S( 30,122), S( 41,133), S(41 ,139), S( 41,153), S( 45,160),
+      S( 57,165), S( 58,170), S( 67,175) },
+    { S(-29,-49), S(-16,-29), S( -8, -8), S( -8, 17), S( 18, 39), S( 25, 54), // Queen
+      S( 23, 59), S( 37, 73), S( 41, 76), S( 54, 95), S( 65, 95) ,S( 68,101),
+      S( 69,124), S( 70,128), S( 70,132), S( 70,133) ,S( 71,136), S( 72,140),
+      S( 74,147), S( 76,149), S( 90,153), S(104,169), S(105,171), S(106,171),
+      S(112,178), S(114,185), S(114,187), S(119,221) }
+  };
+  Score MaxMobility  = S(150, 200);
+  Score DropMobility = S(10, 10);
+
+  // BishopPawns[distance from edge] contains a file-dependent penalty for pawns on
+  // squares of the same color as our bishop.
+  Score BishopPawns[int(FILE_NB) / 2] = {
+    S(3, 8), S(3, 9), S(2, 8), S(3, 8)
+  };
+
+  // KingProtector[knight/bishop] contains penalty for each distance unit to own king
+  Score KingProtector[2] = { S(8, 9), S(6, 9) };
+
+  // Outpost[knight/bishop] contains bonuses for each knight or bishop occupying a
+  // pawn protected square on rank 4 to 6 which is also safe from a pawn attack.
+  Score Outpost[2] = { S(57, 38), S(31, 24) };
+
+  // PassedRank[Rank] contains a bonus according to the rank of a passed pawn
+  Score PassedRank[RANK_NB] = {
+    S(0, 0), S(7, 27), S(16, 32), S(17, 40), S(64, 71), S(170, 174), S(278, 262)
+  };
+
+  Score RookOnClosedFile = S(10, 5);
+  Score RookOnOpenFile[2] = { S(19, 6), S(47, 26) };
+
+  // ThreatByMinor/ByRook[attacked PieceType] contains bonuses according to
+  // which piece type attacks which one. Attacks on lesser pieces which are
+  // pawn-defended are not considered.
+  Score ThreatByMinor[PIECE_TYPE_NB] = {
+    S(0, 0), S(5, 32), S(55, 41), S(77, 56), S(89, 119), S(79, 162)
+  };
+
+  Score ThreatByRook[PIECE_TYPE_NB] = {
+    S(0, 0), S(3, 44), S(37, 68), S(42, 60), S(0, 39), S(58, 43)
+  };
+
+  Value CorneredBishop = Value(50);
+
+  // Assorted bonuses and penalties
+  Score UncontestedOutpost  = S(  1, 10);
+  Score BishopOnKingRing    = S( 24,  0);
+  Score BishopXRayPawns     = S(  4,  5);
+  Score FlankAttacks        = S(  8,  0);
+  Score Hanging             = S( 69, 36);
+  Score KnightOnQueen       = S( 16, 11);
+  Score LongDiagonalBishop  = S( 45,  0);
+  Score MinorBehindPawn     = S( 18,  3);
+  Score PassedFile          = S( 11,  8);
+  Score PawnlessFlank       = S( 17, 95);
+  Score ReachableOutpost    = S( 31, 22);
+  Score RestrictedPiece     = S(  7,  7);
+  Score RookOnKingRing      = S( 16,  0);
+  Score SliderOnQueen       = S( 60, 18);
+  Score ThreatByKing        = S( 24, 89);
+  Score ThreatByPawnPush    = S( 48, 39);
+  Score ThreatBySafePawn    = S(173, 94);
+  Score TrappedRook         = S( 55, 13);
+  Score WeakQueenProtection = S( 14,  0);
+  Score WeakQueen           = S( 56, 15);
+
+
+  // Variant and fairy piece bonuses
+  Score KingProximity        = S(2, 6);
+  Score EndgameKingProximity = S(0, 10);
+  Score ConnectedSoldier     = S(20, 20);
+
+  int VirtualCheck = 600;
+  #undef S
+
   // evaluation vars
   int pieceValue[PHASE_NB][PIECE_TYPE_NB];
   int scoreValue[PHASE_NB][TERM_NB]; // in centi (100 is default)

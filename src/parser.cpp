@@ -249,27 +249,35 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
         {
             std::string token;
             size_t idx = 0, idx2 = 0;
+            int value;
             std::stringstream ss(pv->second);
             while (!ss.eof()) {
                 std::getline(ss, token, ':');
                 idx = token.length();
                 if (idx == 0)
                     break;
+                if (!(ss >> value)) {
+                    if (DoCheck)
+                        std::cerr << "scoreValue - Invalid score value: " << token << std::endl;
+                    break;
+                }
                 idx2 = v->scoreToChar.find('|' + token);
                 if (idx2 == std::string::npos) {
-                    if (DoCheck)
+                    if (str_equals(token, "hanging")) {
+                        v->Hanging = score_phase(phase, value, v->Hanging);
+                    } else if (str_startswith(token, "threatMinor") && (idx2 = v->pieceToChar.find(toupper(token.back()))) != std::string::npos) {
+                        v->ThreatByMinor[idx2] = score_phase(phase, value, v->ThreatByMinor[idx2]);
+                    } else if (str_startswith(token, "kingAttack") && (idx2 = v->pieceToChar.find(toupper(token.back()))) != std::string::npos) {
+                        v->KingAttackWeights[idx2] = value;
+                    } else if (DoCheck)
                         std::cerr << "scoreValue - Invalid score type: " << token << std::endl;
                     std::getline(ss, token, ' ');
                     continue;
                 }
                 idx2 = str_count(v->scoreToChar.substr(0, idx2), '|');
-                if (!(ss >> v->scoreValue[phase][idx2])) {
-                    if (DoCheck)
-                        std::cerr << "scoreValue - Invalid score value: " << token << std::endl;
-                    break;
-                }
+                v->scoreValue[phase][idx2] = value;
                 ss.ignore(1);
-                // std::cout << optionName << " " << token << " " << idx2 <<  " " << v->scoreValue[phase][idx2] << std::endl;
+                // std::cout << optionName << " " << token << " " << idx2 <<  " " << value << std::endl;
             }
         }
     }
