@@ -198,14 +198,18 @@ void init(const Variant* v) {
     int score_eg = PieceValue[EG][pc];
 
     // Override variant piece value
-    if (v->pieceValue[MG][pt])
+    if (v->pieceValue[MG][pt]) {
       score_mg = v->pieceValue[MG][pt];
       if (score_mg == INT_MAX)
         score_mg = 0;
-    if (v->pieceValue[EG][pt])
+    }
+      
+    if (v->pieceValue[EG][pt]) {
       score_eg = v->pieceValue[EG][pt];
       if (score_eg == INT_MAX)
         score_eg = 0;
+    }
+      
 
     CapturePieceValue[MG][pc] = CapturePieceValue[MG][~pc] = EvalPieceValue[MG][pc] = EvalPieceValue[MG][~pc] = Value(score_mg);
     CapturePieceValue[EG][pc] = CapturePieceValue[EG][~pc] = EvalPieceValue[EG][pc] = EvalPieceValue[EG][~pc] = Value(score_eg);
