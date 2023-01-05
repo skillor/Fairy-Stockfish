@@ -231,10 +231,7 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
             size_t idx = 0;
             std::stringstream ss(pv->second);
             while (!ss.eof() && ss >> token && (idx = v->pieceToChar.find(toupper(token))) != std::string::npos
-                             && ss >> token && ss >> v->pieceValue[phase][idx]) {
-                if (v->pieceValue[phase][idx] == 0)
-                    v->pieceValue[phase][idx] = INT_MAX;
-            }
+                             && ss >> token && ss >> v->pieceValue[phase][idx]) {}
             
             if (DoCheck && idx == std::string::npos)
                 std::cerr << optionName << " - Invalid piece type: " << token << std::endl;
@@ -242,6 +239,41 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
                 std::cerr << optionName << " - Invalid piece value for type: " << v->pieceToChar[idx] << std::endl;
         }
     }
+
+    // score values
+    for (Phase phase : {MG, EG})
+    {
+        const std::string optionName = phase == MG ? "scoreValueMg" : "scoreValueEg";
+        const auto& pv = config.find(optionName);
+        if (pv != config.end())
+        {
+            std::string token;
+            size_t idx = 0, idx2 = 0;
+            std::stringstream ss(pv->second);
+            while (!ss.eof()) {
+                std::getline(ss, token, ':');
+                idx = token.length();
+                if (idx == 0)
+                    break;
+                idx2 = v->scoreToChar.find('|' + token);
+                if (idx2 == std::string::npos) {
+                    if (DoCheck)
+                        std::cerr << "scoreValue - Invalid score type: " << token << std::endl;
+                    std::getline(ss, token, ' ');
+                    continue;
+                }
+                idx2 = str_count(v->scoreToChar.substr(0, idx2), '|');
+                if (!(ss >> v->scoreValue[phase][idx2])) {
+                    if (DoCheck)
+                        std::cerr << "scoreValue - Invalid score value: " << token << std::endl;
+                    break;
+                }
+                ss.ignore(1);
+                // std::cout << optionName << " " << token << " " << idx2 <<  " " << v->scoreValue[phase][idx2] << std::endl;
+            }
+        }
+    }
+
     parse_attribute("variantTemplate", v->variantTemplate);
     parse_attribute("pieceToCharTable", v->pieceToCharTable);
     parse_attribute("pocketSize", v->pocketSize);

@@ -173,10 +173,6 @@ namespace Trace {
 
   enum Tracing { NO_TRACE, TRACE };
 
-  enum Term { // The first PIECE_TYPE_NB entries are reserved for PieceType
-    MATERIAL = PIECE_TYPE_NB, IMBALANCE, MOBILITY, THREAT, PASSED, SPACE, VARIANT, WINNABLE, TOTAL, TERM_NB
-  };
-
   Score scores[TERM_NB][COLOR_NB];
 
   double to_cp(Value v) { return double(v) / PawnValueEg; }
@@ -486,10 +482,15 @@ namespace {
              b = (b & pos.pieces()) | (pos.moves_from(Us, Pt, s) & ~pos.pieces() & pos.board_bb());
 
         int mob = popcount(b & mobilityArea[Us]);
+        Score mobAdd;
         if (Pt <= QUEEN)
-            mobility[Us] += MobilityBonus[Pt - 2][mob];
+            mobAdd = MobilityBonus[Pt - 2][mob];
         else
-            mobility[Us] += MaxMobility * (mob - 2) / (8 + mob);
+            mobAdd = MaxMobility * (mob - 2) / (8 + mob);
+
+        mobility[Us] += make_score(mg_value(mobAdd) * pos.variant()->scoreValue[MG][MOBILITY] / 100,
+                                   eg_value(mobAdd) * pos.variant()->scoreValue[EG][MOBILITY] / 100);
+
 
         // Piece promotion bonus
         if (pos.promoted_piece_type(Pt) != NO_PIECE_TYPE)
@@ -635,7 +636,9 @@ namespace {
             kingAttacksCount[Us] += popcount(b & attackedBy[Them][KING]);
         }
         Bitboard theirHalf = pos.board_bb() & ~forward_ranks_bb(Them, relative_rank(Them, Rank((pos.max_rank() - 1) / 2), pos.max_rank()));
-        mobility[Us] += DropMobility * popcount(b & theirHalf & ~attackedBy[Them][ALL_PIECES]);
+        Score mobAdd = DropMobility * popcount(b & theirHalf & ~attackedBy[Them][ALL_PIECES]);
+        mobility[Us] += make_score(mg_value(mobAdd) * pos.variant()->scoreValue[MG][MOBILITY] / 100,
+                                   eg_value(mobAdd) * pos.variant()->scoreValue[EG][MOBILITY] / 100);
 
         // Bonus for Kyoto shogi style drops of promoted pieces
         if (pos.promoted_piece_type(pt) != NO_PIECE_TYPE && pos.drop_promoted())
@@ -643,8 +646,12 @@ namespace {
                                 std::max(EvalPieceValue[EG][pos.promoted_piece_type(pt)] - EvalPieceValue[EG][pt], VALUE_ZERO)) / 4 * pos.count_in_hand(Us, pt);
 
         // Mobility bonus for reversi variants
-        if (pos.enclosing_drop())
-            mobility[Us] += make_score(500, 500) * popcount(b);
+        if (pos.enclosing_drop()) {
+            mobAdd = make_score(500, 500) * popcount(b);
+            mobility[Us] += make_score(mg_value(mobAdd) * pos.variant()->scoreValue[MG][MOBILITY] / 100,
+                                       eg_value(mobAdd) * pos.variant()->scoreValue[EG][MOBILITY] / 100);
+        }
+            
 
         // Reduce score if there is a deficit of gates
         if (pos.seirawan_gating() && !pos.piece_drops() && pos.count_in_hand(Us, ALL_PIECES) > popcount(pos.gates(Us)))
@@ -819,6 +826,9 @@ namespace {
         score = make_score(mg_value(score) * me->material_density() / 11000,
                            mg_value(score) * me->material_density() / 11000);
 
+    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][KING] / 100,
+                       eg_value(score) * pos.variant()->scoreValue[EG][KING] / 100);
+
     if constexpr (T)
         Trace::add(KING, Us, score);
 
@@ -972,6 +982,9 @@ namespace {
         score += SliderOnQueen * popcount(b & safe & attackedBy2[Us]) * (1 + queenImbalance);
     }
 
+    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][THREAT] / 100,
+                       eg_value(score) * pos.variant()->scoreValue[EG][THREAT] / 100);
+
     if constexpr (T)
         Trace::add(THREAT, Us, score);
 
@@ -1093,6 +1106,9 @@ namespace {
         }
     }
 
+    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][PASSED] / 100,
+                       eg_value(score) * pos.variant()->scoreValue[EG][PASSED] / 100);
+
     if constexpr (T)
         Trace::add(PASSED, Us, score);
 
@@ -1144,6 +1160,9 @@ namespace {
 
     if (pos.capture_the_flag(Us))
         score += make_score(200, 200) * popcount(behind & safe & pos.capture_the_flag(Us));
+
+    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][SPACE] / 100,
+                       eg_value(score) * pos.variant()->scoreValue[EG][SPACE] / 100);
 
     if constexpr (T)
         Trace::add(SPACE, Us, score);
@@ -1310,6 +1329,9 @@ namespace {
         score -= make_score(200, 200) * popcount(unstable);
     }
 
+    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][VARIANT] / 100,
+                       eg_value(score) * pos.variant()->scoreValue[EG][VARIANT] / 100);
+
     if (T)
         Trace::add(VARIANT, Us, score);
 
@@ -1364,8 +1386,8 @@ namespace {
     int u = ((mg > 0) - (mg < 0)) * std::clamp(complexity + 50, -abs(mg), 0);
     int v = ((eg > 0) - (eg < 0)) * std::max(complexity, -abs(eg));
 
-    mg += u;
-    eg += v;
+    mg += u * pos.variant()->scoreValue[MG][WINNABLE] / 100;
+    eg += v * pos.variant()->scoreValue[EG][WINNABLE] / 100;;
 
     // Compute the scale factor for the winning side
     Color strongSide = eg > VALUE_DRAW ? WHITE : BLACK;
@@ -1447,6 +1469,10 @@ namespace {
     // the position object (material + piece square tables) and the material
     // imbalance. Score is computed internally from the white point of view.
     Score score = pos.psq_score();
+
+    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][MATERIAL] / 100,
+                       eg_value(score) * pos.variant()->scoreValue[EG][MATERIAL] / 100);
+
     if (T)
         Trace::add(MATERIAL, score);
     score += me->imbalance() + pos.this_thread()->trend;

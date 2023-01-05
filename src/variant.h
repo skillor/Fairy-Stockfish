@@ -35,6 +35,13 @@ namespace Stockfish {
 /// Variant struct stores information needed to determine the rules of a variant.
 
 struct Variant {
+  // evaluation vars
+  int pieceValue[PHASE_NB][PIECE_TYPE_NB];
+  int scoreValue[PHASE_NB][TERM_NB]; // in centi (100 is default)
+  // MATERIAL, IMBALANCE, MOBILITY, THREAT, PASSED, SPACE, VARIANT, WINNABLE, TOTAL
+  std::string termToChar = "|material|imbalance|mobility|threat|passed|space|variant|winnable|total ";
+  std::string scoreToChar = "";
+
   std::string variantTemplate = "fairy";
   std::string pieceToCharTable = "-";
   int pocketSize = 0;
@@ -42,11 +49,10 @@ struct Variant {
   File maxFile = FILE_H;
   bool chess960 = false;
   bool twoBoards = false;
-  int pieceValue[PHASE_NB][PIECE_TYPE_NB] = {};
   std::string customPiece[CUSTOM_PIECES_NB] = {};
   std::set<PieceType> pieceTypes = { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING };
-  std::string pieceToChar =  " PNBRQ" + std::string(KING - QUEEN - 1, ' ') + "K" + std::string(PIECE_TYPE_NB - KING - 1, ' ')
-                           + " pnbrq" + std::string(KING - QUEEN - 1, ' ') + "k" + std::string(PIECE_TYPE_NB - KING - 1, ' ');
+  std::string pieceTypeToChar = " pnbrq" + std::string(KING - QUEEN - 1, ' ') + "k" + std::string(PIECE_TYPE_NB - KING - 1, ' ');
+  std::string pieceToChar;
   std::string pieceToCharSynonyms = std::string(PIECE_NB, ' ');
   std::string startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   Bitboard mobilityRegion[COLOR_NB][PIECE_TYPE_NB] = {};
@@ -151,6 +157,9 @@ struct Variant {
   bool shogiStylePromotions = false;
 
   void add_piece(PieceType pt, char c, std::string betza = "", char c2 = ' ') {
+      pieceTypeToChar[make_piece(WHITE, pt)] = tolower(c);
+      scoreToChar[make_piece(WHITE, pt) * 2 + 1] = tolower(c);
+
       pieceToChar[make_piece(WHITE, pt)] = toupper(c);
       pieceToChar[make_piece(BLACK, pt)] = tolower(c);
       pieceToCharSynonyms[make_piece(WHITE, pt)] = toupper(c2);
@@ -166,6 +175,9 @@ struct Variant {
   }
 
   void remove_piece(PieceType pt) {
+      pieceTypeToChar[make_piece(WHITE, pt)] = ' ';
+      scoreToChar[make_piece(WHITE, pt) * 2 + 1] = ' ';
+
       pieceToChar[make_piece(WHITE, pt)] = ' ';
       pieceToChar[make_piece(BLACK, pt)] = ' ';
       pieceToCharSynonyms[make_piece(WHITE, pt)] = ' ';
@@ -174,6 +186,12 @@ struct Variant {
   }
 
   void reset_pieces() {
+      pieceTypeToChar = std::string(PIECE_NB / 2, ' ');
+
+      for (std::string::size_type i = 0; i < pieceTypeToChar.size(); i++) {
+        scoreToChar[i * 2 + 1] = ' ';
+      }
+
       pieceToChar = std::string(PIECE_NB, ' ');
       pieceToCharSynonyms = std::string(PIECE_NB, ' ');
       pieceTypes.clear();

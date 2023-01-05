@@ -30,6 +30,13 @@
 
 namespace Stockfish {
 
+inline int str_count(std::string s, char match) {
+  int count = 0;
+  for (char const &c: s)
+    if (c == match) count++;
+  return count;
+}
+
 std::string engine_info(bool to_uci = false, bool to_xboard = false);
 std::string compiler_info();
 void prefetch(void* addr);

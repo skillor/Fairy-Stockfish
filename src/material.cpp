@@ -132,6 +132,10 @@ namespace {
     else if (pos.captures_to_hand())
         bonus -= bonus / 10;
 
+    bonus = make_score(mg_value(bonus) * pos.variant()->scoreValue[MG][IMBALANCE] / 100,
+                       eg_value(bonus) * pos.variant()->scoreValue[EG][IMBALANCE] / 100);
+
+
     return bonus;
   }
 

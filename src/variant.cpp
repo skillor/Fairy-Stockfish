@@ -35,6 +35,25 @@ namespace {
     // Base variant
     Variant* variant_base() {
         Variant* v = new Variant();
+
+        std::string upper = v->pieceTypeToChar;
+        std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+        v->pieceToChar = upper + v->pieceTypeToChar;
+
+        for (char const &c: v->pieceTypeToChar) {
+            v->scoreToChar.push_back('|');
+            v->scoreToChar.push_back(c);
+        }
+        v->scoreToChar += v->termToChar;
+
+        for (int ph = 0; ph < PHASE_NB; ++ph) {
+            for (int pt = 0; pt < PIECE_TYPE_NB; ++pt) {
+                v->pieceValue[ph][pt] = INT_MAX;
+            }
+            for (int t = 0; t < TERM_NB; ++t) {
+                v->scoreValue[ph][t] = 100;
+            }
+        }
         return v;
     }
     // Base for all fairy variants
