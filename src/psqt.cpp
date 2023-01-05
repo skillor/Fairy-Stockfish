@@ -182,159 +182,41 @@ Score psq[PIECE_NB][SQUARE_NB + 1];
 // the tables are initialized by flipping and changing the sign of the white scores.
 void init(const Variant* v) {
 
-  PieceType strongestPiece = NO_PIECE_TYPE;
   for (PieceType pt : v->pieceTypes)
   {
-      if (is_custom(pt))
-      {
-          PieceValue[MG][pt] = piece_value(MG, pt);
-          PieceValue[EG][pt] = piece_value(EG, pt);
-      }
-
-      if (PieceValue[MG][pt] > PieceValue[MG][strongestPiece])
-          strongestPiece = pt;
+    if (is_custom(pt))
+    {
+      PieceValue[MG][pt] = piece_value(MG, pt);
+      PieceValue[EG][pt] = piece_value(EG, pt);
+    }
   }
 
-  Value maxPromotion = VALUE_ZERO;
-  for (PieceType pt : v->promotionPieceTypes)
-      maxPromotion = std::max(maxPromotion, PieceValue[EG][pt]);
-
-  for (PieceType pt = PAWN; pt <= KING; ++pt)
+  for (PieceType pt : v->pieceTypes)
   {
-      Piece pc = make_piece(WHITE, pt);
+    Piece pc = make_piece(WHITE, pt);
+    int score_mg = PieceValue[MG][pc];
+    int score_eg = PieceValue[EG][pc];
 
-      Score score = make_score(PieceValue[MG][pc], PieceValue[EG][pc]);
+    // Override variant piece value
+    if (v->pieceValue[MG][pt])
+      score_mg = v->pieceValue[MG][pt];
+      if (score_mg == INT_MAX)
+        score_mg = 0;
+    if (v->pieceValue[EG][pt])
+      score_eg = v->pieceValue[EG][pt];
+      if (score_eg == INT_MAX)
+        score_eg = 0;
 
-      // Consider promotion types in pawn score
-      if (pt == PAWN)
-      {
-          score -= make_score(0, (QueenValueEg - maxPromotion) / 100);
-          if (v->blastOnCapture)
-              score += make_score(mg_value(score) * 3 / 2, eg_value(score));
-      }
-      
-      const PieceInfo* pi = pieceMap.find(pt)->second;
-      bool isSlider = pi->slider[MODALITY_QUIET].size() || pi->slider[MODALITY_CAPTURE].size() || pi->hopper[MODALITY_QUIET].size() || pi->hopper[MODALITY_CAPTURE].size();
-      bool isPawn = !isSlider && pi->steps[MODALITY_QUIET].size() && !std::any_of(pi->steps[MODALITY_QUIET].begin(), pi->steps[MODALITY_QUIET].end(), [](const std::pair<const Direction, int>& d) { return d.first < SOUTH / 2; });
-      bool isSlowLeaper = !isSlider && !std::any_of(pi->steps[MODALITY_QUIET].begin(), pi->steps[MODALITY_QUIET].end(), [](const std::pair<const Direction, int>& d) { return dist(d.first) > 1; });
+    CapturePieceValue[MG][pc] = CapturePieceValue[MG][~pc] = EvalPieceValue[MG][pc] = EvalPieceValue[MG][~pc] = Value(score_mg);
+    CapturePieceValue[EG][pc] = CapturePieceValue[EG][~pc] = EvalPieceValue[EG][pc] = EvalPieceValue[EG][~pc] = Value(score_eg);
 
-      // Scale slider piece values with board size
-      if (isSlider)
-      {
-          constexpr int lc = 5;
-          constexpr int rm = 5;
-          constexpr int r0 = rm + RANK_8;
-          int r1 = rm + (v->maxRank + v->maxFile - 2 * v->capturesToHand) / 2;
-          int leaper = pi->steps[MODALITY_QUIET].size() + pi->steps[MODALITY_CAPTURE].size();
-          int slider = pi->slider[MODALITY_QUIET].size() + pi->slider[MODALITY_CAPTURE].size() + pi->hopper[MODALITY_QUIET].size() + pi->hopper[MODALITY_CAPTURE].size();
-          score = make_score(mg_value(score) * (lc * leaper + r1 * slider) / (lc * leaper + r0 * slider),
-                             eg_value(score) * (lc * leaper + r1 * slider) / (lc * leaper + r0 * slider));
-      }
+    Score score = make_score(score_mg, score_eg);
 
-      // Piece values saturate earlier in drop variants
-      if (v->capturesToHand || v->twoBoards)
-          score = make_score(mg_value(score) * 7000 / (7000 + mg_value(score)),
-                             eg_value(score) * 7000 / (7000 + eg_value(score)));
-
-      // In variants where checks are prohibited, strong pieces are less mobile, so limit their value 
-      if (!v->checking)
-          score = make_score(std::min(mg_value(score), Value(1800)) / 2,
-                             std::min(eg_value(score), Value(1800)) * 3 / 5);
-
-      // With check counting, strong pieces are even more dangerous
-      else if (v->checkCounting)
-          score = make_score(mg_value(score) * (20000 + mg_value(score)) / 22000,
-                             eg_value(score) * (20000 + eg_value(score)) / 21000);
-
-      // Increase leapers' value in makpong
-      else if (v->makpongRule)
-      {
-          if (std::any_of(pi->steps[MODALITY_CAPTURE].begin(), pi->steps[MODALITY_CAPTURE].end(), [](const std::pair<const Direction, int>& d) { return dist(d.first) > 1 && !d.second; }))
-              score = make_score(mg_value(score) * 4200 / (3500 + mg_value(score)),
-                                 eg_value(score) * 4700 / (3500 + mg_value(score)));
-      }
-
-      // Adjust piece values for atomic captures
-      if (v->blastOnCapture)
-          score = make_score(mg_value(score) * 7000 / (7000 + mg_value(score)), eg_value(score));
-
-      // In variants such as horde where all pieces need to be captured, weak pieces such as pawns are more useful
-      if (   v->extinctionValue == -VALUE_MATE
-          && v->extinctionPieceCount == 0
-          && v->extinctionPieceTypes.find(ALL_PIECES) != v->extinctionPieceTypes.end())
-          score += make_score(0, std::max(KnightValueEg - PieceValue[EG][pt], VALUE_ZERO) / 20);
-
-      // The strongest piece of a variant usually has some dominance, such as rooks in Makruk and Xiangqi.
-      // This does not apply to drop variants.
-      if (pt == strongestPiece && !v->capturesToHand)
-              score += make_score(std::max(QueenValueMg - PieceValue[MG][pt], VALUE_ZERO) / 20,
-                                  std::max(QueenValueEg - PieceValue[EG][pt], VALUE_ZERO) / 20);
-
-      // For antichess variants, use negative piece values
-      if (v->extinctionValue == VALUE_MATE)
-          score = -make_score(mg_value(score) / 8, eg_value(score) / 8 / (1 + !pi->slider[MODALITY_CAPTURE].size()));
-
-      // Override variant piece value
-      if (v->pieceValue[MG][pt])
-          score = make_score(v->pieceValue[MG][pt], eg_value(score));
-      if (v->pieceValue[EG][pt])
-          score = make_score(mg_value(score), v->pieceValue[EG][pt]);
-
-      CapturePieceValue[MG][pc] = CapturePieceValue[MG][~pc] = mg_value(score);
-      CapturePieceValue[EG][pc] = CapturePieceValue[EG][~pc] = eg_value(score);
-
-      // For drop variants, halve the piece values to compensate for double changes by captures
-      if (v->capturesToHand)
-          score = score / 2;
-
-      EvalPieceValue[MG][pc] = EvalPieceValue[MG][~pc] = mg_value(score);
-      EvalPieceValue[EG][pc] = EvalPieceValue[EG][~pc] = eg_value(score);
-
-      // Determine pawn rank
-      std::istringstream ss(v->startFen);
-      unsigned char token;
-      Rank rc = v->maxRank;
-      Rank pawnRank = RANK_2;
-      while ((ss >> token) && !isspace(token))
-      {
-          if (token == '/')
-              --rc;
-          else if (token == v->pieceToChar[PAWN] || token == v->pieceToChar[SHOGI_PAWN])
-              pawnRank = rc;
-      }
-
-      for (Square s = SQ_A1; s <= SQ_MAX; ++s)
-      {
-          File f = std::max(File(edge_distance(file_of(s), v->maxFile)), FILE_A);
-          Rank r = rank_of(s);
-          psq[ pc][s] = score + (  pt == PAWN  ? PBonus[std::min(r, RANK_8)][std::min(file_of(s), FILE_H)]
-                                 : pt == KING  ? KingBonus[std::clamp(Rank(r - pawnRank + 1), RANK_1, RANK_8)][std::min(f, FILE_D)] * (1 + v->capturesToHand)
-                                 : pt <= QUEEN ? Bonus[pc][std::min(r, RANK_8)][std::min(f, FILE_D)] * (1 + v->blastOnCapture)
-                                 : pt == HORSE ? Bonus[KNIGHT][std::min(r, RANK_8)][std::min(f, FILE_D)]
-                                 : pt == COMMONER && v->extinctionValue == -VALUE_MATE && v->extinctionPieceTypes.find(COMMONER) != v->extinctionPieceTypes.end() ? KingBonus[std::clamp(Rank(r - pawnRank + 1), RANK_1, RANK_8)][std::min(f, FILE_D)]
-                                 : isSlider    ? make_score(5, 5) * (2 * f + std::max(std::min(r, Rank(v->maxRank - r)), RANK_1) - v->maxFile - 1)
-                                 : isPawn      ? make_score(5, 5) * (2 * f - v->maxFile)
-                                               : make_score(10, 10) * (1 + isSlowLeaper) * (f + std::max(std::min(r, Rank(v->maxRank - r)), RANK_1) - v->maxFile / 2));
-          // Add a penalty for unpromoted soldiers
-          if (pt == SOLDIER && r < v->soldierPromotionRank)
-              psq[pc][s] -= score * (v->soldierPromotionRank - r) / (4 + f);
-          // Corners are valuable in reversi
-          if (v->enclosingDrop == REVERSI)
-          {
-              if (f == FILE_A && (r == RANK_1 || r == v->maxRank))
-                  psq[pc][s] += make_score(1000, 1000);
-          }
-          // In atomic variants pieces are "self-defending" and should therefore be pushed forward
-          if (v->blastOnCapture)
-              psq[pc][s] += make_score(40, 0) * (r - v->maxRank / 2);
-          // Safe king squares
-          if (r == RANK_1 && f <= FILE_B && ((pt == KING && v->checkCounting) || (pt == COMMONER && v->blastOnCapture)))
-              psq[pc][s] += make_score(100, 0);
-          psq[~pc][rank_of(s) <= v->maxRank ? flip_rank(s, v->maxRank) : s] = -psq[pc][s];
-      }
-      // Pieces in hand
-      psq[ pc][SQ_NONE] = score + make_score(35, 10) * (1 + !isSlider);
-      psq[~pc][SQ_NONE] = -psq[pc][SQ_NONE];
+    for (Square s = SQ_A1; s <= SQ_MAX; ++s)
+    {
+        psq[ pc][s] = score;
+        psq[~pc][rank_of(s) <= v->maxRank ? flip_rank(s, v->maxRank) : s] = -psq[pc][s];
+    }
   }
 }
 

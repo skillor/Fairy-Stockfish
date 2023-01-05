@@ -583,7 +583,7 @@ void Position::set_state(StateInfo* si) const {
           si->pawnKey ^= Zobrist::psq[pc][s];
 
       else if (type_of(pc) != KING)
-          si->nonPawnMaterial[color_of(pc)] += PieceValue[MG][pc];
+          si->nonPawnMaterial[color_of(pc)] += EvalPieceValue[MG][pc];
   }
 
   if (si->epSquare != SQ_NONE)
@@ -1454,7 +1454,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           st->pawnKey ^= Zobrist::psq[captured][capsq];
       }
       else
-          st->nonPawnMaterial[them] -= PieceValue[MG][captured];
+          st->nonPawnMaterial[them] -= EvalPieceValue[MG][captured];
 
       if (Eval::useNNUE)
       {
@@ -1554,13 +1554,13 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           remove_piece(s);
           k ^= Zobrist::psq[flipped][s];
           st->materialKey ^= Zobrist::psq[flipped][pieceCount[flipped]];
-          st->nonPawnMaterial[them] -= PieceValue[MG][flipped];
+          st->nonPawnMaterial[them] -= EvalPieceValue[MG][flipped];
 
           // add our piece
           put_piece(resulting, s);
           k ^= Zobrist::psq[resulting][s];
           st->materialKey ^= Zobrist::psq[resulting][pieceCount[resulting]-1];
-          st->nonPawnMaterial[us] += PieceValue[MG][resulting];
+          st->nonPawnMaterial[us] += EvalPieceValue[MG][resulting];
       }
   }
 
@@ -1580,7 +1580,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
       drop_piece(make_piece(us, in_hand_piece_type(m)), pc, to);
       st->materialKey ^= Zobrist::psq[pc][pieceCount[pc]-1];
       if (type_of(pc) != PAWN)
-          st->nonPawnMaterial[us] += PieceValue[MG][pc];
+          st->nonPawnMaterial[us] += EvalPieceValue[MG][pc];
       // Set castling rights for dropped king or rook
       if (castling_dropped_piece() && rank_of(to) == castling_rank(us))
       {
@@ -1658,7 +1658,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
                             ^ Zobrist::psq[pc][pieceCount[pc]];
 
           // Update material
-          st->nonPawnMaterial[us] += PieceValue[MG][promotion];
+          st->nonPawnMaterial[us] += EvalPieceValue[MG][promotion];
       }
 
       // Update pawn hash key
@@ -1692,7 +1692,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
                         ^ Zobrist::psq[pc][pieceCount[pc]];
 
       // Update material
-      st->nonPawnMaterial[us] += PieceValue[MG][promotion] - PieceValue[MG][pc];
+      st->nonPawnMaterial[us] += EvalPieceValue[MG][promotion] - EvalPieceValue[MG][pc];
   }
   else if (type_of(m) == PIECE_DEMOTION)
   {
@@ -1719,7 +1719,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
                         ^ Zobrist::psq[pc][pieceCount[pc]];
 
       // Update material
-      st->nonPawnMaterial[us] += PieceValue[MG][demotion] - PieceValue[MG][pc];
+      st->nonPawnMaterial[us] += EvalPieceValue[MG][demotion] - EvalPieceValue[MG][pc];
   }
 
   // Set capture piece
@@ -1748,7 +1748,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
       st->gatesBB[us] ^= gate;
       k ^= Zobrist::psq[gating_piece][gate];
       st->materialKey ^= Zobrist::psq[gating_piece][pieceCount[gating_piece]];
-      st->nonPawnMaterial[us] += PieceValue[MG][gating_piece];
+      st->nonPawnMaterial[us] += EvalPieceValue[MG][gating_piece];
   }
 
   // Remove gates
@@ -1780,7 +1780,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           Piece bpc = piece_on(bsq);
           Color bc = color_of(bpc);
           if (type_of(bpc) != PAWN)
-              st->nonPawnMaterial[bc] -= PieceValue[MG][bpc];
+              st->nonPawnMaterial[bc] -= EvalPieceValue[MG][bpc];
 
           if (Eval::useNNUE)
           {
@@ -2219,11 +2219,11 @@ bool Position::see_ge(Move m, Value threshold) const {
   if (must_capture() || !checking_permitted() || is_gating(m) || count<CLOBBER_PIECE>() == count<ALL_PIECES>())
       return VALUE_ZERO >= threshold;
 
-  int swap = PieceValue[MG][piece_on(to)] - threshold;
+  int swap = EvalPieceValue[MG][piece_on(to)] - threshold;
   if (swap < 0)
       return false;
 
-  swap = PieceValue[MG][moved_piece(m)] - swap;
+  swap = EvalPieceValue[MG][moved_piece(m)] - swap;
   if (swap <= 0)
       return true;
 
@@ -2316,7 +2316,7 @@ bool Position::see_ge(Move m, Value threshold) const {
       // pick next piece without considering value
       else if ((bb = stmAttackers & ~pieces(KING)))
       {
-          if ((swap = PieceValue[MG][piece_on(lsb(bb))] - swap) < res)
+          if ((swap = EvalPieceValue[MG][piece_on(lsb(bb))] - swap) < res)
               break;
 
           occupied ^= lsb(bb);

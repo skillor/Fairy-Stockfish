@@ -231,7 +231,11 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
             size_t idx = 0;
             std::stringstream ss(pv->second);
             while (!ss.eof() && ss >> token && (idx = v->pieceToChar.find(toupper(token))) != std::string::npos
-                             && ss >> token && ss >> v->pieceValue[phase][idx]) {}
+                             && ss >> token && ss >> v->pieceValue[phase][idx]) {
+                if (v->pieceValue[phase][idx] == 0)
+                    v->pieceValue[phase][idx] = INT_MAX;
+            }
+            
             if (DoCheck && idx == std::string::npos)
                 std::cerr << optionName << " - Invalid piece type: " << token << std::endl;
             else if (DoCheck && !ss.eof())
