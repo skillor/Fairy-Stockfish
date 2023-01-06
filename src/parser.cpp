@@ -282,6 +282,30 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
         }
     }
 
+    // piece square table
+    for (PieceType pt : v->pieceTypes) {
+        if (v->pieceToChar[pt] == ' ')
+            continue;
+        for (Phase phase : {MG, EG})
+        {
+            std::string optionName = phase == MG ? "pieceSquaresMg" : "pieceSquaresEg";
+            optionName += toupper(v->pieceToChar[pt]);
+
+            const auto& pv = config.find(optionName);
+            if (pv != config.end())
+            {
+                int value, rank;
+                char token, file;
+                std::stringstream ss(pv->second);
+                while (!ss.eof() && ss >> file && ss >> rank && ss >> token && ss >> value) {
+                    Square sq = make_square(File(tolower(file) - 'a'), Rank(rank - 1));
+                    v->pieceSquareBonus[phase][pt][sq] = value;
+                    std::cout << optionName << " " << file << " " << rank << " " << sq << " " << value << std::endl;
+                }
+            }
+        }
+    }
+
     parse_attribute("variantTemplate", v->variantTemplate);
     parse_attribute("pieceToCharTable", v->pieceToCharTable);
     parse_attribute("pocketSize", v->pocketSize);

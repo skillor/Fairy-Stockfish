@@ -208,11 +208,9 @@ void init(const Variant* v) {
     CapturePieceValue[MG][pc] = CapturePieceValue[MG][~pc] = EvalPieceValue[MG][pc] = EvalPieceValue[MG][~pc] = Value(score_mg);
     CapturePieceValue[EG][pc] = CapturePieceValue[EG][~pc] = EvalPieceValue[EG][pc] = EvalPieceValue[EG][~pc] = Value(score_eg);
 
-    Score score = make_score(score_mg, score_eg);
-
     for (Square s = SQ_A1; s <= SQ_MAX; ++s)
     {
-        psq[ pc][s] = score;
+        psq[ pc][s] = make_score(score_mg + v->pieceSquareBonus[MG][pt][s], score_eg + v->pieceSquareBonus[EG][pt][s]);
         psq[~pc][rank_of(s) <= v->maxRank ? flip_rank(s, v->maxRank) : s] = -psq[pc][s];
     }
   }

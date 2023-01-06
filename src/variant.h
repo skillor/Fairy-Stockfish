@@ -136,6 +136,9 @@ struct Variant {
   int VirtualCheck = 600;
   #undef S
 
+  // Added bonuses
+  int pieceSquareBonus[PHASE_NB][PIECE_TYPE_NB][SQUARE_NB];
+
   // evaluation vars
   int pieceValue[PHASE_NB][PIECE_TYPE_NB];
   int scoreValue[PHASE_NB][TERM_NB]; // in centi (100 is default)
