@@ -78,17 +78,17 @@ namespace {
 
   bool is_KXK(const Position& pos, Color us) {
     return  !more_than_one(pos.pieces(~us))
-          && pos.non_pawn_material(us) >= std::min(RookValueMg, 2 * SilverValueMg);
+          && pos.non_pawn_material(us) >= std::min(EvalPieceValue[MG][ROOK], 2 * EvalPieceValue[MG][SILVER]);
   }
 
   bool is_KBPsK(const Position& pos, Color us) {
-    return   pos.non_pawn_material(us) == BishopValueMg
+    return   pos.non_pawn_material(us) == EvalPieceValue[MG][BISHOP]
           && pos.count<PAWN>(us) >= 1;
   }
 
   bool is_KQKRPs(const Position& pos, Color us) {
     return  !pos.count<PAWN>(us)
-          && pos.non_pawn_material(us) == QueenValueMg
+          && pos.non_pawn_material(us) == EvalPieceValue[MG][QUEEN]
           && pos.count<ROOK>(~us) == 1
           && pos.count<PAWN>(~us) >= 1;
   }
@@ -173,7 +173,7 @@ Entry* probe(const Position& pos) {
           npm2 += pos.count_in_hand(pt) * EvalPieceValue[MG][make_piece(WHITE, pt)];
       e->gamePhase = Phase(PHASE_MIDGAME * npm / std::max(int(npm + npm2), 1));
       int countAll = pos.count_with_hand(WHITE, ALL_PIECES) + pos.count_with_hand(BLACK, ALL_PIECES);
-      e->materialDensity = (npm + npm2 + pos.count<PAWN>() * PawnValueMg) * countAll / (pos.files() * pos.ranks());
+      e->materialDensity = (npm + npm2 + pos.count<PAWN>() * EvalPieceValue[MG][PAWN]) * countAll / (pos.files() * pos.ranks());
   }
   else
       e->gamePhase = Phase(((npm - EndgameLimit) * PHASE_MIDGAME) / (MidgameLimit - EndgameLimit));
@@ -248,13 +248,13 @@ Entry* probe(const Position& pos) {
   // Zero or just one pawn makes it difficult to win, even with a small material
   // advantage. This catches some trivial draws like KK, KBK and KNK and gives a
   // drawish scale factor for cases such as KRKBP and KmmKm (except for KBBKN).
-  if (!pos.count<PAWN>(WHITE) && npm_w - npm_b <= BishopValueMg)
-      e->factor[WHITE] = uint8_t(npm_w <  RookValueMg && pos.count<ALL_PIECES>(WHITE) <= 2 ? SCALE_FACTOR_DRAW :
-                                 npm_b <= BishopValueMg && pos.count<ALL_PIECES>(WHITE) <= 3 ? 4 : 14);
+  if (!pos.count<PAWN>(WHITE) && npm_w - npm_b <= EvalPieceValue[MG][BISHOP])
+      e->factor[WHITE] = uint8_t(npm_w <  EvalPieceValue[MG][ROOK] && pos.count<ALL_PIECES>(WHITE) <= 2 ? SCALE_FACTOR_DRAW :
+                                 npm_b <= EvalPieceValue[MG][BISHOP] && pos.count<ALL_PIECES>(WHITE) <= 3 ? 4 : 14);
 
-  if (!pos.count<PAWN>(BLACK) && npm_b - npm_w <= BishopValueMg)
-      e->factor[BLACK] = uint8_t(npm_b <  RookValueMg && pos.count<ALL_PIECES>(BLACK) <= 2 ? SCALE_FACTOR_DRAW :
-                                 npm_w <= BishopValueMg && pos.count<ALL_PIECES>(BLACK) <= 3 ? 4 : 14);
+  if (!pos.count<PAWN>(BLACK) && npm_b - npm_w <= EvalPieceValue[MG][BISHOP])
+      e->factor[BLACK] = uint8_t(npm_b <  EvalPieceValue[MG][ROOK] && pos.count<ALL_PIECES>(BLACK) <= 2 ? SCALE_FACTOR_DRAW :
+                                 npm_w <= EvalPieceValue[MG][BISHOP] && pos.count<ALL_PIECES>(BLACK) <= 3 ? 4 : 14);
   }
 
   // Evaluate the material imbalance. We use PIECE_TYPE_NONE as a place holder

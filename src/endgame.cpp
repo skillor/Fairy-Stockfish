@@ -122,7 +122,7 @@ Value Endgame<KXK>::operator()(const Position& pos) const {
   Square weakKing   = pos.square<KING>(weakSide);
 
   Value result =  pos.non_pawn_material(strongSide)
-                + pos.count<PAWN>(strongSide) * PawnValueEg
+                + pos.count<PAWN>(strongSide) * EvalPieceValue[EG][PAWN]
                 + push_to_edge(weakKing, pos)
                 + push_close(strongKing, weakKing);
 
@@ -149,7 +149,7 @@ Value Endgame<KXK>::operator()(const Position& pos) const {
 template<>
 Value Endgame<KBNK>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, KnightValueMg + BishopValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][KNIGHT] + EvalPieceValue[MG][BISHOP], 0));
   assert(verify_material(pos, weakSide, VALUE_ZERO, 0));
 
   Square strongKing   = pos.square<KING>(strongSide);
@@ -187,14 +187,14 @@ Value Endgame<KPK>::operator()(const Position& pos) const {
       || RANK_MAX != RANK_8
       || pos.promotion_piece_types().find(QUEEN) == pos.promotion_piece_types().end())
   {
-      Value result = PawnValueEg + Value(rank_of(strongPawn));
+      Value result = EvalPieceValue[EG][PAWN] + Value(rank_of(strongPawn));
       return strongSide == pos.side_to_move() ? result : -result;
   }
 
   if (!Bitbases::probe(strongKing, strongPawn, weakKing, us))
       return VALUE_DRAW;
 
-  Value result = VALUE_KNOWN_WIN + PawnValueEg + Value(rank_of(strongPawn));
+  Value result = VALUE_KNOWN_WIN + EvalPieceValue[EG][PAWN] + Value(rank_of(strongPawn));
 
   return strongSide == pos.side_to_move() ? result : -result;
 }
@@ -207,7 +207,7 @@ Value Endgame<KPK>::operator()(const Position& pos) const {
 template<>
 Value Endgame<KRKP>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, RookValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][ROOK], 0));
   assert(verify_material(pos, weakSide, VALUE_ZERO, 1));
 
   Square strongKing = pos.square<KING>(strongSide);
@@ -219,13 +219,13 @@ Value Endgame<KRKP>::operator()(const Position& pos) const {
 
   // If the stronger side's king is in front of the pawn, it's a win
   if (forward_file_bb(strongSide, strongKing) & weakPawn)
-      result = RookValueEg - distance(strongKing, weakPawn);
+      result = EvalPieceValue[EG][ROOK] - distance(strongKing, weakPawn);
 
   // If the weaker side's king is too far from the pawn and the rook,
   // it's a win.
   else if (   distance(weakKing, weakPawn) >= 3 + (pos.side_to_move() == weakSide)
            && distance(weakKing, strongRook) >= 3)
-      result = RookValueEg - distance(strongKing, weakPawn);
+      result = EvalPieceValue[EG][ROOK] - distance(strongKing, weakPawn);
 
   // If the pawn is far advanced and supported by the defending king,
   // the position is drawish
@@ -249,8 +249,8 @@ Value Endgame<KRKP>::operator()(const Position& pos) const {
 template<>
 Value Endgame<KRKB>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, RookValueMg, 0));
-  assert(verify_material(pos, weakSide, BishopValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][ROOK], 0));
+  assert(verify_material(pos, weakSide, EvalPieceValue[MG][BISHOP], 0));
 
   Value result = Value(push_to_edge(pos.square<KING>(weakSide), pos));
   return strongSide == pos.side_to_move() ? result : -result;
@@ -262,8 +262,8 @@ Value Endgame<KRKB>::operator()(const Position& pos) const {
 template<>
 Value Endgame<KRKN>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, RookValueMg, 0));
-  assert(verify_material(pos, weakSide, KnightValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][ROOK], 0));
+  assert(verify_material(pos, weakSide, EvalPieceValue[MG][KNIGHT], 0));
 
   Square weakKing   = pos.square<KING>(weakSide);
   Square weakKnight = pos.square<KNIGHT>(weakSide);
@@ -279,7 +279,7 @@ Value Endgame<KRKN>::operator()(const Position& pos) const {
 template<>
 Value Endgame<KQKP>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, QueenValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][QUEEN], 0));
   assert(verify_material(pos, weakSide, VALUE_ZERO, 1));
 
   Square strongKing = pos.square<KING>(strongSide);
@@ -291,7 +291,7 @@ Value Endgame<KQKP>::operator()(const Position& pos) const {
   if (   relative_rank(weakSide, weakPawn) != RANK_7
       || distance(weakKing, weakPawn) != 1
       || ((FileBBB | FileDBB | FileEBB | FileGBB) & weakPawn))
-      result += QueenValueEg - PawnValueEg;
+      result += EvalPieceValue[EG][QUEEN] - EvalPieceValue[EG][PAWN];
 
   return strongSide == pos.side_to_move() ? result : -result;
 }
@@ -304,14 +304,14 @@ Value Endgame<KQKP>::operator()(const Position& pos) const {
 template<>
 Value Endgame<KQKR>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, QueenValueMg, 0));
-  assert(verify_material(pos, weakSide, RookValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][QUEEN], 0));
+  assert(verify_material(pos, weakSide, EvalPieceValue[MG][ROOK], 0));
 
   Square strongKing = pos.square<KING>(strongSide);
   Square weakKing   = pos.square<KING>(weakSide);
 
-  Value result =  QueenValueEg
-                - RookValueEg
+  Value result =  EvalPieceValue[EG][QUEEN]
+                - EvalPieceValue[EG][ROOK]
                 + push_to_edge(weakKing, pos)
                 + push_close(strongKing, weakKing);
 
@@ -324,13 +324,13 @@ Value Endgame<KQKR>::operator()(const Position& pos) const {
 template<>
 Value Endgame<KNNKP>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, 2 * KnightValueMg, 0));
+  assert(verify_material(pos, strongSide, 2 * EvalPieceValue[MG][KNIGHT], 0));
   assert(verify_material(pos, weakSide, VALUE_ZERO, 1));
 
   Square weakKing = pos.square<KING>(weakSide);
   Square weakPawn = pos.square<PAWN>(weakSide);
 
-  Value result =      PawnValueEg
+  Value result =      CentiValue
                +  2 * push_to_edge(weakKing, pos)
                - 10 * relative_rank(weakSide, weakPawn);
 
@@ -352,7 +352,7 @@ Value Endgame<KFsPsK>::operator()(const Position& pos) const {
   Square loserKSq = pos.square<KING>(weakSide);
 
   Value result =  pos.non_pawn_material(strongSide)
-                + pos.count<PAWN>(strongSide) * PawnValueEg
+                + pos.count<PAWN>(strongSide) * EvalPieceValue[EG][PAWN]
                 + push_to_edge(loserKSq, pos)
                 + push_close(winnerKSq, loserKSq);
 
@@ -388,7 +388,7 @@ Value Endgame<KFsPsK>::operator()(const Position& pos) const {
 template<>
 Value Endgame<KNSK>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, KnightValueMg + SilverValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][KNIGHT] + EvalPieceValue[MG][SILVER], 0));
   assert(verify_material(pos, weakSide, VALUE_ZERO, 0));
 
   Square winnerKSq = pos.square<KING>(strongSide);
@@ -407,7 +407,7 @@ Value Endgame<KNSK>::operator()(const Position& pos) const {
 template<>
 Value Endgame<KNFK>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, KnightValueMg + FersValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][KNIGHT] + EvalPieceValue[MG][FERS], 0));
   assert(verify_material(pos, weakSide, VALUE_ZERO, 0));
 
   Square winnerKSq = pos.square<KING>(strongSide);
@@ -434,13 +434,13 @@ Value Endgame<KNFK>::operator()(const Position& pos) const {
 template<>
 Value Endgame<KNSFKR>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, KnightValueMg + SilverValueMg + FersValueMg, 0));
-  assert(verify_material(pos, weakSide, RookValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][KNIGHT] + EvalPieceValue[MG][SILVER] + EvalPieceValue[MG][FERS], 0));
+  assert(verify_material(pos, weakSide, EvalPieceValue[MG][ROOK], 0));
 
   Square winnerKSq = pos.square<KING>(strongSide);
   Square loserKSq = pos.square<KING>(weakSide);
 
-  Value result =  KnightValueEg + SilverValueEg + FersValueEg - RookValueEg
+  Value result =  EvalPieceValue[MG][KNIGHT] + EvalPieceValue[EG][SILVER] + EvalPieceValue[EG][FERS] - EvalPieceValue[EG][ROOK]
                 + push_close(winnerKSq, loserKSq)
                 + push_to_opposing_edge(relative_square(strongSide, loserKSq, pos.max_rank()), pos);
 
@@ -452,7 +452,7 @@ Value Endgame<KNSFKR>::operator()(const Position& pos) const {
 template<>
 Value Endgame<KSFK>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, SilverValueMg + FersValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][SILVER] + EvalPieceValue[MG][FERS], 0));
   assert(verify_material(pos, weakSide, VALUE_ZERO, 0));
 
   Square winnerKSq = pos.square<KING>(strongSide);
@@ -470,14 +470,14 @@ Value Endgame<KSFK>::operator()(const Position& pos) const {
 template<>
 Value Endgame<KSFKF>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, SilverValueMg + FersValueMg, 0));
-  assert(verify_material(pos, weakSide, FersValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][SILVER] + EvalPieceValue[MG][FERS], 0));
+  assert(verify_material(pos, weakSide, EvalPieceValue[MG][FERS], 0));
 
   Square winnerKSq = pos.square<KING>(strongSide);
   Square loserKSq = pos.square<KING>(weakSide);
   Square fersSq = pos.square<FERS>(weakSide);
 
-  Value result =  SilverValueEg
+  Value result =  EvalPieceValue[EG][SILVER]
                 + push_close(winnerKSq, loserKSq)
                 + push_away(fersSq, loserKSq)
                 + push_to_opposing_edge(relative_square(strongSide, loserKSq, pos.max_rank()), pos);
@@ -490,14 +490,14 @@ Value Endgame<KSFKF>::operator()(const Position& pos) const {
 template<>
 Value Endgame<KRKS>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, RookValueMg, 0));
-  assert(verify_material(pos, weakSide, SilverValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][ROOK], 0));
+  assert(verify_material(pos, weakSide, EvalPieceValue[MG][SILVER], 0));
 
   Square winnerKSq = pos.square<KING>(strongSide);
   Square loserKSq = pos.square<KING>(weakSide);
 
-  Value result =  RookValueEg
-                - SilverValueEg
+  Value result =  EvalPieceValue[EG][ROOK]
+                - EvalPieceValue[EG][SILVER]
                 + push_to_edge(loserKSq, pos)
                 + push_close(winnerKSq, loserKSq);
 
@@ -512,7 +512,7 @@ Value Endgame<KRKS>::operator()(const Position& pos) const {
 template<>
 ScaleFactor Endgame<KBPsK>::operator()(const Position& pos) const {
 
-  assert(pos.non_pawn_material(strongSide) == BishopValueMg);
+  assert(pos.non_pawn_material(strongSide) == EvalPieceValue[MG][BISHOP]);
   assert(pos.count<PAWN>(strongSide) >= 1);
 
   // No assertions about the material of weakSide, because we want draws to
@@ -574,7 +574,7 @@ ScaleFactor Endgame<KBPsK>::operator()(const Position& pos) const {
 template<>
 ScaleFactor Endgame<KQKRPs>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, QueenValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][QUEEN], 0));
   assert(pos.count<ROOK>(weakSide) == 1);
   assert(pos.count<PAWN>(weakSide) >= 1);
 
@@ -603,8 +603,8 @@ ScaleFactor Endgame<KQKRPs>::operator()(const Position& pos) const {
 template<>
 ScaleFactor Endgame<KRPKR>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, RookValueMg, 1));
-  assert(verify_material(pos, weakSide,   RookValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][ROOK], 1));
+  assert(verify_material(pos, weakSide,   EvalPieceValue[MG][ROOK], 0));
 
   // Assume strongSide is white and the pawn is on files A-D
   Square strongKing = normalize(pos, strongSide, pos.square<KING>(strongSide));
@@ -697,8 +697,8 @@ ScaleFactor Endgame<KRPKR>::operator()(const Position& pos) const {
 template<>
 ScaleFactor Endgame<KRPKB>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, RookValueMg, 1));
-  assert(verify_material(pos, weakSide, BishopValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][ROOK], 1));
+  assert(verify_material(pos, weakSide, EvalPieceValue[MG][BISHOP], 0));
 
   // Test for a rook pawn
   if (pos.pieces(PAWN) & (FileABB | FileHBB))
@@ -744,8 +744,8 @@ ScaleFactor Endgame<KRPKB>::operator()(const Position& pos) const {
 template<>
 ScaleFactor Endgame<KRPPKRP>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, RookValueMg, 2));
-  assert(verify_material(pos, weakSide,   RookValueMg, 1));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][ROOK], 2));
+  assert(verify_material(pos, weakSide,   EvalPieceValue[MG][ROOK], 1));
 
   Square strongPawn1 = lsb(pos.pieces(strongSide, PAWN));
   Square strongPawn2 = msb(pos.pieces(strongSide, PAWN));
@@ -796,8 +796,8 @@ ScaleFactor Endgame<KPsK>::operator()(const Position& pos) const {
 template<>
 ScaleFactor Endgame<KBPKB>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, BishopValueMg, 1));
-  assert(verify_material(pos, weakSide,   BishopValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][BISHOP], 1));
+  assert(verify_material(pos, weakSide,   EvalPieceValue[MG][BISHOP], 0));
 
   Square strongPawn = pos.square<PAWN>(strongSide);
   Square strongBishop = pos.square<BISHOP>(strongSide);
@@ -822,8 +822,8 @@ ScaleFactor Endgame<KBPKB>::operator()(const Position& pos) const {
 template<>
 ScaleFactor Endgame<KBPPKB>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, BishopValueMg, 2));
-  assert(verify_material(pos, weakSide,   BishopValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][BISHOP], 2));
+  assert(verify_material(pos, weakSide,   EvalPieceValue[MG][BISHOP], 0));
 
   Square strongBishop = pos.square<BISHOP>(strongSide);
   Square weakBishop   = pos.square<BISHOP>(weakSide);
@@ -891,8 +891,8 @@ ScaleFactor Endgame<KBPPKB>::operator()(const Position& pos) const {
 template<>
 ScaleFactor Endgame<KBPKN>::operator()(const Position& pos) const {
 
-  assert(verify_material(pos, strongSide, BishopValueMg, 1));
-  assert(verify_material(pos, weakSide, KnightValueMg, 0));
+  assert(verify_material(pos, strongSide, EvalPieceValue[MG][BISHOP], 1));
+  assert(verify_material(pos, weakSide, EvalPieceValue[MG][KNIGHT], 0));
 
   Square strongPawn = pos.square<PAWN>(strongSide);
   Square strongBishop = pos.square<BISHOP>(strongSide);

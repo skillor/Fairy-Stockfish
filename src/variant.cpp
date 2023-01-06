@@ -51,7 +51,7 @@ namespace {
                 v->pieceValue[ph][pt] = INT_MAX;
             }
             for (int t = 0; t < TERM_NB; ++t) {
-                v->scoreValue[ph][t] = 100;
+                v->scoreValue[ph][t] = CentiValue;
             }
         }
         return v;

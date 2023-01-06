@@ -134,10 +134,11 @@ struct Variant {
   Score ConnectedSoldier     = S(20, 20);
 
   int VirtualCheck = 600;
-  #undef S
-
   // Added bonuses
   int pieceSquareBonus[PHASE_NB][PIECE_TYPE_NB][SQUARE_NB];
+  Score promotionBonus = S(1, 1);
+
+  #undef S
 
   // evaluation vars
   int pieceValue[PHASE_NB][PIECE_TYPE_NB];

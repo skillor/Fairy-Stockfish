@@ -168,7 +168,7 @@ namespace Stockfish::Eval::NNUE {
     int positional  = output[0];
 
     int delta_npm = abs(pos.non_pawn_material(WHITE) - pos.non_pawn_material(BLACK));
-    int entertainment = (adjusted && delta_npm <= BishopValueMg - KnightValueMg ? 7 : 0);
+    int entertainment = (adjusted && delta_npm <= BishopValueMg - EvalPieceValue[MG][KNIGHT] ? 7 : 0);
 
     int A = 128 - entertainment;
     int B = 128 + entertainment;
@@ -230,7 +230,7 @@ namespace Stockfish::Eval::NNUE {
 
     buffer[0] = (v < 0 ? '-' : v > 0 ? '+' : ' ');
 
-    int cp = std::abs(100 * v / PawnValueEg);
+    int cp = std::abs(100 * v / CentiValue);
 
     if (cp >= 10000)
     {
@@ -259,7 +259,7 @@ namespace Stockfish::Eval::NNUE {
   static void format_cp_aligned_dot(Value v, char* buffer) {
     buffer[0] = (v < 0 ? '-' : v > 0 ? '+' : ' ');
 
-    int cp = std::abs(100 * v / PawnValueEg);
+    int cp = std::abs(100 * v / CentiValue);
 
     if (cp >= 10000)
     {

@@ -175,8 +175,7 @@ namespace Trace {
 
   Score scores[TERM_NB][COLOR_NB];
 
-  // double to_cp(Value v) { return double(v) / PawnValueEg; }
-  double to_cp(Value v) { return double(v) / 100; }
+  double to_cp(Value v) { return double(v) / CentiValue; }
 
   void add(int idx, Color c, Score s) {
     scores[idx][c] = s;
@@ -420,8 +419,8 @@ namespace {
         else
             mobAdd = pos.variant()->MaxMobility * (mob - 2) / (8 + mob);
 
-        mobility[Us] += make_score(mg_value(mobAdd) * pos.variant()->scoreValue[MG][MOBILITY] / 100,
-                                   eg_value(mobAdd) * pos.variant()->scoreValue[EG][MOBILITY] / 100);
+        mobility[Us] += make_score(mg_value(mobAdd) * pos.variant()->scoreValue[MG][MOBILITY] / CentiValue,
+                                   eg_value(mobAdd) * pos.variant()->scoreValue[EG][MOBILITY] / CentiValue);
 
 
         // Piece promotion bonus
@@ -545,8 +544,8 @@ namespace {
         }
     }
 
-    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][Pt] / 100,
-                       eg_value(score) * pos.variant()->scoreValue[EG][Pt] / 100);
+    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][Pt] / CentiValue,
+                       eg_value(score) * pos.variant()->scoreValue[EG][Pt] / CentiValue);
 
     if constexpr (T)
         Trace::add(Pt, Us, score);
@@ -573,8 +572,8 @@ namespace {
         }
         Bitboard theirHalf = pos.board_bb() & ~forward_ranks_bb(Them, relative_rank(Them, Rank((pos.max_rank() - 1) / 2), pos.max_rank()));
         Score mobAdd = pos.variant()->DropMobility * popcount(b & theirHalf & ~attackedBy[Them][ALL_PIECES]);
-        mobility[Us] += make_score(mg_value(mobAdd) * pos.variant()->scoreValue[MG][MOBILITY] / 100,
-                                   eg_value(mobAdd) * pos.variant()->scoreValue[EG][MOBILITY] / 100);
+        mobility[Us] += make_score(mg_value(mobAdd) * pos.variant()->scoreValue[MG][MOBILITY] / CentiValue,
+                                   eg_value(mobAdd) * pos.variant()->scoreValue[EG][MOBILITY] / CentiValue);
 
         // Bonus for Kyoto shogi style drops of promoted pieces
         if (pos.promoted_piece_type(pt) != NO_PIECE_TYPE && pos.drop_promoted())
@@ -584,8 +583,8 @@ namespace {
         // Mobility bonus for reversi variants
         if (pos.enclosing_drop()) {
             mobAdd = make_score(500, 500) * popcount(b);
-            mobility[Us] += make_score(mg_value(mobAdd) * pos.variant()->scoreValue[MG][MOBILITY] / 100,
-                                       eg_value(mobAdd) * pos.variant()->scoreValue[EG][MOBILITY] / 100);
+            mobility[Us] += make_score(mg_value(mobAdd) * pos.variant()->scoreValue[MG][MOBILITY] / CentiValue,
+                                       eg_value(mobAdd) * pos.variant()->scoreValue[EG][MOBILITY] / CentiValue);
         }
             
 
@@ -918,8 +917,8 @@ namespace {
         score += pos.variant()->SliderOnQueen * popcount(b & safe & attackedBy2[Us]) * (1 + queenImbalance);
     }
 
-    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][THREAT] / 100,
-                       eg_value(score) * pos.variant()->scoreValue[EG][THREAT] / 100);
+    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][THREAT] / CentiValue,
+                       eg_value(score) * pos.variant()->scoreValue[EG][THREAT] / CentiValue);
 
     if constexpr (T)
         Trace::add(THREAT, Us, score);
@@ -1021,8 +1020,8 @@ namespace {
         maxMg = std::max(maxMg, EvalPieceValue[MG][pt]);
         maxEg = std::max(maxEg, EvalPieceValue[EG][pt]);
     }
-    score = make_score(mg_value(score) * int(maxMg - PawnValueMg) / (QueenValueMg - PawnValueMg),
-                       eg_value(score) * int(maxEg - PawnValueEg) / (QueenValueEg - PawnValueEg));
+    score = make_score(mg_value(score) * int(mg_value(pos.variant()->promotionBonus)) * int(maxMg),
+                       eg_value(score) * int(eg_value(pos.variant()->promotionBonus)) * int(maxEg));
 
     // Score passed shogi pawns
     PieceType pt = pos.promoted_piece_type(SHOGI_PAWN);
@@ -1042,8 +1041,8 @@ namespace {
         }
     }
 
-    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][PASSED] / 100,
-                       eg_value(score) * pos.variant()->scoreValue[EG][PASSED] / 100);
+    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][PASSED] / CentiValue,
+                       eg_value(score) * pos.variant()->scoreValue[EG][PASSED] / CentiValue);
 
     if constexpr (T)
         Trace::add(PASSED, Us, score);
@@ -1097,8 +1096,8 @@ namespace {
     if (pos.capture_the_flag(Us))
         score += make_score(200, 200) * popcount(behind & safe & pos.capture_the_flag(Us));
 
-    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][SPACE] / 100,
-                       eg_value(score) * pos.variant()->scoreValue[EG][SPACE] / 100);
+    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][SPACE] / CentiValue,
+                       eg_value(score) * pos.variant()->scoreValue[EG][SPACE] / CentiValue);
 
     if constexpr (T)
         Trace::add(SPACE, Us, score);
@@ -1265,8 +1264,8 @@ namespace {
         score -= make_score(200, 200) * popcount(unstable);
     }
 
-    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][VARIANT] / 100,
-                       eg_value(score) * pos.variant()->scoreValue[EG][VARIANT] / 100);
+    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][VARIANT] / CentiValue,
+                       eg_value(score) * pos.variant()->scoreValue[EG][VARIANT] / CentiValue);
 
     if (T)
         Trace::add(VARIANT, Us, score);
@@ -1322,8 +1321,8 @@ namespace {
     int u = ((mg > 0) - (mg < 0)) * std::clamp(complexity + 50, -abs(mg), 0);
     int v = ((eg > 0) - (eg < 0)) * std::max(complexity, -abs(eg));
 
-    mg += u * pos.variant()->scoreValue[MG][WINNABLE] / 100;
-    eg += v * pos.variant()->scoreValue[EG][WINNABLE] / 100;;
+    mg += u * pos.variant()->scoreValue[MG][WINNABLE] / CentiValue;
+    eg += v * pos.variant()->scoreValue[EG][WINNABLE] / CentiValue;;
 
     // Compute the scale factor for the winning side
     Color strongSide = eg > VALUE_DRAW ? WHITE : BLACK;
@@ -1336,8 +1335,8 @@ namespace {
         {
             // For pure opposite colored bishops endgames use scale factor
             // based on the number of passed pawns of the strong side.
-            if (   pos.non_pawn_material(WHITE) == BishopValueMg
-                && pos.non_pawn_material(BLACK) == BishopValueMg)
+            if (   pos.non_pawn_material(WHITE) == EvalPieceValue[MG][BISHOP]
+                && pos.non_pawn_material(BLACK) == EvalPieceValue[MG][BISHOP])
                 sf = 18 + 4 * popcount(pe->passed_pawns(strongSide));
             // For every other opposite colored bishops endgames use scale factor
             // based on the number of all pieces of the strong side.
@@ -1347,8 +1346,8 @@ namespace {
         // For rook endgames with strong side not having overwhelming pawn number advantage
         // and its pawns being on one flank and weak side protecting its pieces with a king
         // use lower scale factor.
-        else if (  pos.non_pawn_material(WHITE) == RookValueMg
-                && pos.non_pawn_material(BLACK) == RookValueMg
+        else if (  pos.non_pawn_material(WHITE) == EvalPieceValue[MG][ROOK]
+                && pos.non_pawn_material(BLACK) == EvalPieceValue[MG][ROOK]
                 && pos.count<PAWN>(strongSide) - pos.count<PAWN>(~strongSide) <= 1
                 && bool(KingSide & pos.pieces(strongSide, PAWN)) != bool(QueenSide & pos.pieces(strongSide, PAWN))
                 && pos.count<KING>(~strongSide)
@@ -1406,8 +1405,8 @@ namespace {
     // imbalance. Score is computed internally from the white point of view.
     Score score = pos.psq_score();
 
-    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][MATERIAL] / 100,
-                       eg_value(score) * pos.variant()->scoreValue[EG][MATERIAL] / 100);
+    score = make_score(mg_value(score) * pos.variant()->scoreValue[MG][MATERIAL] / CentiValue,
+                       eg_value(score) * pos.variant()->scoreValue[EG][MATERIAL] / CentiValue);
 
     if (T)
         Trace::add(MATERIAL, score);

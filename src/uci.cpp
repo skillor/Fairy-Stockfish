@@ -248,7 +248,7 @@ namespace {
      double b = (((bs[0] * m + bs[1]) * m + bs[2]) * m) + bs[3];
 
      // Transform eval to centipawns with limited range
-     double x = std::clamp(double(100 * v) / PawnValueEg, -2000.0, 2000.0);
+     double x = std::clamp(double(100 * v) / CentiValue, -2000.0, 2000.0);
 
      // Return win rate in per mille (rounded to nearest)
      return int(0.5 + 1000 / (1 + std::exp((a - x) / b)));
@@ -446,13 +446,13 @@ string UCI::value(Value v) {
   if (CurrentProtocol == XBOARD)
   {
       if (abs(v) < VALUE_MATE_IN_MAX_PLY)
-          ss << v * 100 / PawnValueEg;
+          ss << v * 100 / CentiValue;
       else
           ss << (v > 0 ? XBOARD_VALUE_MATE + VALUE_MATE - v + 1 : -XBOARD_VALUE_MATE - VALUE_MATE - v - 1) / 2;
   } else
 
   if (abs(v) < VALUE_MATE_IN_MAX_PLY)
-      ss << (CurrentProtocol == UCCI ? "" : "cp ") << v * 100 / PawnValueEg;
+      ss << (CurrentProtocol == UCCI ? "" : "cp ") << v * 100 / CentiValue;
   else if (CurrentProtocol == USI)
       // In USI, mate distance is given in ply
       ss << "mate " << (v > 0 ? VALUE_MATE - v : -VALUE_MATE - v);

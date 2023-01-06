@@ -230,11 +230,11 @@ Entry* probe(const Position& pos) {
   e->key = key;
   e->blockedCount = 0;
   e->scores[WHITE] = evaluate<WHITE>(pos, e);
-  e->scores[WHITE] = make_score(mg_value(e->scores[WHITE]) * pos.variant()->scoreValue[MG][PAWN] / 100,
-                                eg_value(e->scores[WHITE]) * pos.variant()->scoreValue[EG][PAWN] / 100);
+  e->scores[WHITE] = make_score(mg_value(e->scores[WHITE]) * pos.variant()->scoreValue[MG][PAWN] / CentiValue,
+                                eg_value(e->scores[WHITE]) * pos.variant()->scoreValue[EG][PAWN] / CentiValue);
   e->scores[BLACK] = evaluate<BLACK>(pos, e);
-  e->scores[BLACK] = make_score(mg_value(e->scores[BLACK]) * pos.variant()->scoreValue[MG][PAWN] / 100,
-                                eg_value(e->scores[BLACK]) * pos.variant()->scoreValue[EG][PAWN] / 100);
+  e->scores[BLACK] = make_score(mg_value(e->scores[BLACK]) * pos.variant()->scoreValue[MG][PAWN] / CentiValue,
+                                eg_value(e->scores[BLACK]) * pos.variant()->scoreValue[EG][PAWN] / CentiValue);
 
   return e;
 }
