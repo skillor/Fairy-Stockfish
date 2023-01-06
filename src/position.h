@@ -839,7 +839,7 @@ inline Value Position::checkmate_value(int ply) const {
   {
       Value virtualMaterial = VALUE_ZERO;
       for (PieceType pt : piece_types())
-          virtualMaterial += std::max(-count_in_hand(~sideToMove, pt), 0) * PieceValue[MG][pt];
+          virtualMaterial += std::max(-count_in_hand(~sideToMove, pt), 0) * EvalPieceValue[MG][pt];
 
       if (virtualMaterial > 0)
           return -VALUE_VIRTUAL_MATE + virtualMaterial / 20 + ply;
