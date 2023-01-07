@@ -300,7 +300,6 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
                 while (!ss.eof() && ss >> file && ss >> rank && ss >> token && ss >> value) {
                     Square sq = make_square(File(tolower(file) - 'a'), Rank(rank - 1));
                     v->pieceSquareBonus[phase][pt][sq] = value;
-                    std::cout << optionName << " " << file << " " << rank << " " << sq << " " << value << std::endl;
                 }
             }
         }
