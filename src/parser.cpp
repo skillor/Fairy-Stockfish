@@ -265,6 +265,8 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
                 if (idx2 == std::string::npos) {
                     if (str_equals(token, "hanging")) {
                         v->Hanging = score_phase(phase, value, v->Hanging);
+                    } else if (str_equals(token, "pieceSquare")) {
+                        v->psqValue = score_phase(phase, value, v->psqValue);
                     } else if (str_startswith(token, "threatMinor") && (idx2 = v->pieceToChar.find(toupper(token.back()))) != std::string::npos) {
                         v->ThreatByMinor[idx2] = score_phase(phase, value, v->ThreatByMinor[idx2]);
                     } else if (str_startswith(token, "kingAttack") && (idx2 = v->pieceToChar.find(toupper(token.back()))) != std::string::npos) {

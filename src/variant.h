@@ -137,12 +137,13 @@ struct Variant {
   // Added bonuses
   int pieceSquareBonus[PHASE_NB][PIECE_TYPE_NB][SQUARE_NB];
   Score promotionBonus = S(1, 1);
+  Score psqValue = S(100, 100); // in centi
 
   #undef S
 
   // evaluation vars
   int pieceValue[PHASE_NB][PIECE_TYPE_NB];
-  int scoreValue[PHASE_NB][TERM_NB]; // in centi (100 is default)
+  int scoreValue[PHASE_NB][TERM_NB]; // in centi
   // MATERIAL, IMBALANCE, MOBILITY, THREAT, PASSED, SPACE, VARIANT, WINNABLE, TOTAL
   std::string termToChar = "|material|imbalance|mobility|threat|passed|space|variant|winnable|total ";
   std::string scoreToChar = "";
